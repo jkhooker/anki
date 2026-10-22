@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Create and export Anki flashcards with automatic IPA and Zhuyin pronunciation, context highlighting, image attachments, and seamless merging into français, italiano, mandarin (正體字), and mandarin (簡化字) decks.">
+  <meta name="theme-color" content="#bc4b23">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>LexiForge Anki Studio — Polyglot Flashcard Creator & Deck Merger</title>
+
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Newsreader:ital,opsz,wght@0,6..72,600;0,6..72,700;1,6..72,400&family=Noto+Sans+SC:wght@400;600;700&family=Noto+Sans+TC:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand-group">
+        <div class="brand-mark" aria-hidden="true">文</div>
+        <div class="brand-titles">
+          <h1>LexiForge Anki Studio</h1>
+          <p class="brand-subtitle">français • italiano • mandarin (正體字) • mandarin (簡化字)</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button type="button" id="btn-open-hosting" class="btn btn-outline btn-sm">
+          ☁ Free Hosting &amp; Android Guide
+        </button>
+        <button type="button" id="btn-open-settings" class="btn btn-outline btn-sm">
+          ⚙ AI &amp; Export Settings
+        </button>
+        <button type="button" id="btn-theme-toggle" class="btn btn-ghost btn-sm" aria-label="Toggle color theme">
+          ☾ Dark
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main 2-Column Responsive Workbench -->
+  <main class="workbench">
+
+    <!-- LEFT PANEL: Card Composer & Live Anki Card Preview -->
+    <section class="panel" aria-labelledby="composer-heading">
+      <div class="panel-header">
+        <div class="panel-title-group">
+          <h2 id="composer-heading">Create Anki Card</h2>
+          <p>Auto-formats context with <code>**word**</code> and builds <code>[A] = [B] = [C]</code> on the back</p>
+        </div>
+        <span id="lookup-source-badge" class="field-optional">Auto-fills on word entry</span>
+      </div>
+
+      <div class="panel-body">
+        <form id="card-composer-form" novalidate>
+
+          <!-- 1. Target Deck Selection -->
+          <div class="field-group">
+            <div class="field-label-row">
+              <label class="field-label">1. Target Anki Deck (exact name for deck merging)</label>
+            </div>
+            <div class="deck-selector-grid" role="group" aria-label="Target Anki Deck">
+              <button type="button" id="deck-btn-fr" class="deck-option-btn active" data-deck="français" aria-pressed="true">
+                <span class="deck-option-name">français</span>
+                <span class="deck-option-meta">IPA + Définition FR</span>
+              </button>
+              <button type="button" id="deck-btn-it" class="deck-option-btn" data-deck="italiano" aria-pressed="false">
+                <span class="deck-option-name">italiano</span>
+                <span class="deck-option-meta">IPA + Definizione IT</span>
+              </button>
+              <button type="button" id="deck-btn-zh-trad" class="deck-option-btn" data-deck="mandarin (正體字)" aria-pressed="false">
+                <span class="deck-option-name">mandarin (正體字)</span>
+                <span class="deck-option-meta">注音 Zhuyin + EN Def</span>
+              </button>
+              <button type="button" id="deck-btn-zh-simp" class="deck-option-btn" data-deck="mandarin (簡化字)" aria-pressed="false">
+                <span class="deck-option-name">mandarin (簡化字)</span>
+                <span class="deck-option-meta">注音 Zhuyin + EN Def</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 2. Word or Phrase [A] -->
+          <div class="field-group">
+            <div class="field-label-row">
+              <label for="input-word" class="field-label">2. Word or Phrase in Target Language <code>[A]</code></label>
+              <button type="button" id="btn-auto-generate" class="btn btn-outline btn-sm">
+                ✦ Auto-Fill [B] &amp; [C]
+              </button>
+            </div>
+            <div class="headword-input-wrapper">
+              <input
+                type="text"
+                id="input-word"
+                class="input-text input-headword"
+                placeholder="ex: arbre de noël"
+                autocomplete="off"
+                required
+              >
+            </div>
+            <div
+              id="duplicate-warning-banner"
+              class="context-match-pill unmatched"
+              style="display: none; margin-top: 0.45rem;"
+            ></div>
+          </div>
+
+          <!-- 3. Optional Context Text -->
+          <div class="field-group">
+            <div class="field-label-row">
+              <label for="input-context" class="field-label">
+                3. Context Text where Word/Phrase Appears
+                <span class="field-optional">Optional</span>
+              </label>
+              <button type="button" id="btn-wrap-asterisk" class="btn btn-ghost btn-sm" title="Wrap highlighted word in **...**">
+                <code>**</code> Wrap Selection
+              </button>
+            </div>
+            <textarea
+              id="input-context"
+              class="input-textarea"
+              placeholder="ex: Nous avons installé un bel arbre de noël près de la fenêtre."
+            ></textarea>
+            <div class="field-hint-bar">
+              <span>Placed two lines down on Front with <code>**word or phrase**</code> surrounded automatically.</span>
+              <span id="context-match-status" class="context-match-pill matched" style="display: none;"></span>
+            </div>
+          </div>
+
+          <!-- 4. Optional Context Image -->
+          <div class="field-group">
+            <div class="field-label-row">
+              <label for="input-image-file" class="field-label">
+                4. Context Image
+                <span class="field-optional">Optional • Camera / Gallery / Paste</span>
+              </label>
+            </div>
+
+            <input
+              type="file"
+              id="input-image-file"
+              accept="image/*"
+              style="display: none;"
+            >
+
+            <div id="image-dropzone" class="image-upload-zone" role="button" tabindex="0" aria-label="Upload or paste context image">
+              <div class="upload-zone-title">Drop an image here, take a photo on Android, or paste from clipboard</div>
+              <div class="upload-zone-sub">Automatically compressed &amp; bundled inside exported Anki <code>.apkg</code> decks</div>
+              <div class="upload-zone-actions">
+                <button type="button" id="btn-choose-image" class="btn btn-outline btn-sm">
+                  📷 Choose / Take Photo
+                </button>
+                <button type="button" id="btn-paste-image" class="btn btn-outline btn-sm">
+                  📋 Paste Clipboard Image
+                </button>
+              </div>
+            </div>
+
+            <div id="image-preview-container" class="image-preview-box" style="display: none;">
+              <img id="image-preview-thumb" class="image-preview-thumb" alt="Selected context preview">
+              <div class="image-preview-meta">
+                <div id="image-preview-name" class="image-preview-name">context.jpg</div>
+                <div id="image-preview-size" class="image-preview-size">24 KB</div>
+              </div>
+              <button type="button" id="btn-remove-image" class="btn btn-danger-outline btn-sm">
+                Remove
+              </button>
+            </div>
+          </div>
+
+          <!-- 5. Card Back Builder: [A] = [B] = [C] -->
+          <div class="back-builder-box">
+            <div class="back-builder-header">
+              <div class="back-builder-title">
+                <span>Card Back Generator</span>
+                <span class="formula-tag">[A] = [B] = [C]</span>
+              </div>
+              <button
+                type="button"
+                id="btn-convert-pinyin"
+                class="btn btn-outline btn-sm"
+                style="display: none;"
+              >
+                Pinyin → 注音符號
+              </button>
+            </div>
+
+            <div class="back-fields-grid">
+              <div>
+                <div class="field-label-row">
+                  <label id="label-pronunciation" for="input-pronunciation" class="field-label">
+                    [B] IPA (français)
+                  </label>
+                </div>
+                <input
+                  type="text"
+                  id="input-pronunciation"
+                  class="input-text input-mono"
+                  placeholder="ex: aʁbʁ də nɔ.ɛl"
+                  autocomplete="off"
+                >
+                <div id="phonetic-chips-bar" class="phonetic-helper-bar" aria-label="Phonetic symbols"></div>
+              </div>
+
+              <div>
+                <div class="field-label-row">
+                  <label id="label-definition" for="input-definition" class="field-label">
+                    [C] Définition concise (en français)
+                  </label>
+                </div>
+                <input
+                  type="text"
+                  id="input-definition"
+                  class="input-text"
+                  placeholder="ex: sapin décoré pour célébrer la fête de Noël"
+                  autocomplete="off"
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Submit / Cancel Row -->
+          <div style="display: flex; gap: 0.65rem; flex-wrap: wrap;">
+            <button type="submit" id="btn-save-card" class="btn btn-primary btn-lg" style="flex: 1;">
+              Add Card to Deck Queue
+            </button>
+            <button type="button" id="btn-cancel-edit" class="btn btn-outline btn-lg" style="display: none;">
+              Cancel Edit
+            </button>
+          </div>
+        </form>
+
+        <!-- Live Anki Card Preview -->
+        <div class="anki-preview-section">
+          <div class="anki-preview-header">
+            <span class="anki-preview-title">Live Anki Card Preview</span>
+            <span id="preview-deck-badge" class="deck-badge" data-deck="français">français</span>
+          </div>
+
+          <div class="anki-card-stage">
+            <div class="anki-side-label">
+              <span>FRONT OF CARD</span>
+              <span>Word + 2 lines down (<code>&lt;br&gt;&lt;br&gt;</code>) + Context/Image</span>
+            </div>
+            <div class="anki-front-render">
+              <div id="preview-front-headword" class="anki-front-headword">arbre de noël</div>
+              <div id="preview-front-body" class="anki-front-context"></div>
+              <img id="preview-front-image" class="anki-front-image" style="display: none;" alt="Card front context">
+            </div>
+
+            <hr class="anki-divider">
+
+            <div class="anki-side-label">
+              <span>BACK OF CARD</span>
+              <span><code>[A] = [B] = [C]</code></span>
+            </div>
+            <div id="preview-back-formula" class="anki-back-render">
+              arbre de noël = aʁbʁ də nɔ.ɛl = sapin décoré pour célébrer la fête de Noël
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT PANEL: Created Cards Queue, Export & Duplicate-Prevention Controls -->
+    <section class="panel" aria-labelledby="queue-heading">
+      <div class="panel-header">
+        <div class="panel-title-group">
+          <h2 id="queue-heading">Card Queue &amp; Deck Export</h2>
+          <p>Tracks exported vs. new cards so subsequent exports never create duplicates</p>
+        </div>
+      </div>
+
+      <!-- Export & Clear Banner -->
+      <div class="export-banner">
+        <div class="export-stats-row">
+          <div class="stat-pills">
+            <span class="stat-pill unexported">
+              New (Unexported): <strong id="stat-new-count">0</strong>
+            </span>
+            <span class="stat-pill">
+              Total Created: <strong id="stat-total-count">0</strong>
+            </span>
+          </div>
+
+          <div style="display: flex; gap: 0.45rem; flex-wrap: wrap;">
+            <button type="button" id="btn-clear-exported" class="btn btn-outline btn-sm">
+              Clear Exported
+            </button>
+            <button type="button" id="btn-clear-all" class="btn btn-danger-outline btn-sm">
+              Clear All
+            </button>
+          </div>
+        </div>
+
+        <div class="export-actions-bar">
+          <button type="button" id="btn-quick-export-new" class="btn btn-primary" style="flex: 1;">
+            ⬇ Export New Cards (.apkg Merge Package)
+          </button>
+          <button type="button" id="btn-open-export-modal" class="btn btn-outline">
+            Export Options (.apkg / .txt)
+          </button>
+        </div>
+      </div>
+
+      <!-- Deck Filter Tabs -->
+      <div class="deck-filter-tabs" role="tablist" aria-label="Filter cards by deck">
+        <button type="button" class="filter-tab active" data-filter="ALL">
+          All Decks <span class="tab-count">(0)</span>
+        </button>
+        <button type="button" class="filter-tab" data-filter="français">
+          français <span class="tab-count">(0)</span>
+        </button>
+        <button type="button" class="filter-tab" data-filter="italiano">
+          italiano <span class="tab-count">(0)</span>
+        </button>
+        <button type="button" class="filter-tab" data-filter="mandarin (正體字)">
+          mandarin (正體字) <span class="tab-count">(0)</span>
+        </button>
+        <button type="button" class="filter-tab" data-filter="mandarin (簡化字)">
+          mandarin (簡化字) <span class="tab-count">(0)</span>
+        </button>
+      </div>
+
+      <!-- Cards Queue List -->
+      <div id="cards-list-container" class="cards-list-container"></div>
+    </section>
+
+  </main>
+
+  <!-- MODAL 1: Export & Deck Merge Configuration -->
+  <div id="modal-export" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-export-title">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="modal-export-title">Export &amp; Merge into Existing Anki Decks</h3>
+        <button type="button" id="btn-close-export-modal" class="btn btn-ghost btn-sm">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="export-summary-text" style="font-size: 0.86rem; color: var(--text-secondary); margin-bottom: 1rem;"></p>
+
+        <div class="field-group">
+          <div class="field-label" style="margin-bottom: 0.5rem;">1. Which cards should be included?</div>
+          <label class="option-card selected">
+            <input type="radio" name="export-scope" value="unexported" checked>
+            <div>
+              <div class="option-card-title">Only New / Unexported Cards (Recommended — Prevents Duplicates)</div>
+              <div class="option-card-desc">Exports only cards created since your last export so you never re-import cards from earlier batches.</div>
+            </div>
+          </label>
+          <label class="option-card">
+            <input type="radio" name="export-scope" value="all">
+            <div>
+              <div class="option-card-title">All Cards Currently in Queue</div>
+              <div class="option-card-desc">Exports every card in the list (including cards marked as already exported).</div>
+            </div>
+          </label>
+        </div>
+
+        <div class="field-group">
+          <div class="field-label" style="margin-bottom: 0.5rem;">2. Export File Format</div>
+          <label class="option-card selected">
+            <input type="radio" name="export-format" value="apkg" checked>
+            <div>
+              <div class="option-card-title">Anki Deck Package (<code>.apkg</code>) — Best for Desktop &amp; Android (AnkiDroid)</div>
+              <div class="option-card-desc">Bundles all 4 target decks (<code>français</code>, <code>italiano</code>, <code>mandarin (正體字)</code>, <code>mandarin (簡化字)</code>) AND all context images in a single file. Opening it in Anki or AnkiDroid automatically merges into your existing decks with those exact names.</div>
+            </div>
+          </label>
+          <label class="option-card">
+            <input type="radio" name="export-format" value="txt">
+            <div>
+              <div class="option-card-title">Multi-Deck Anki Tab-Separated Text (<code>.txt</code> with <code>#deck column:1</code>)</div>
+              <div class="option-card-desc">Uses Anki 2.1.54+ metadata headers to route each row into <code>français</code>, <code>italiano</code>, <code>mandarin (正體字)</code>, or <code>mandarin (簡化字)</code>. Also downloads a media <code>.zip</code> if images are attached.</div>
+            </div>
+          </label>
+        </div>
+
+        <label class="option-card" style="margin-bottom: 0;">
+          <input type="checkbox" id="chk-auto-clear-export">
+          <div>
+            <div class="option-card-title">Automatically remove exported cards from queue after export</div>
+            <div class="option-card-desc">When unchecked, cards stay visible with an "Exported" badge and are skipped on the next "Export New" run.</div>
+          </div>
+        </label>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="btn-ankiconnect-sync" class="btn btn-outline" title="Requires Anki Desktop with AnkiConnect add-on (2055492159)">
+          ⚡ Direct Sync via AnkiConnect
+        </button>
+        <button type="button" id="btn-confirm-export" class="btn btn-primary">
+          ⬇ Download Export File
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: Free Internet Hosting & Android Mobile Usage Guide -->
+  <div id="modal-hosting" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-hosting-title">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="modal-hosting-title">Host for Free &amp; Use on Computer + Android Phone</h3>
+        <button type="button" id="btn-close-hosting-modal" class="btn btn-ghost btn-sm">✕</button>
+      </div>
+      <div class="modal-body" style="font-size: 0.86rem; line-height: 1.6;">
+        <p style="margin-bottom: 0.85rem;">
+          <strong>LexiForge Anki Studio</strong> is built as a 100% static Progressive Web App (PWA). It requires <strong>no paid backend server or database</strong> and can be hosted for free forever:
+        </p>
+
+        <h4 style="font-size: 0.92rem; margin-bottom: 0.25rem;">Option A: Netlify Drop (Fastest — 30 Seconds, No CLI Needed)</h4>
+        <ol style="padding-left: 1.25rem; margin-bottom: 0.9rem;">
+          <li>Open <code>app.netlify.com/drop</code> in your browser.</li>
+          <li>Drag and drop this project folder (<code>anki-card-studio</code>) onto the page.</li>
+          <li>You immediately get a free <code>https://your-name.netlify.app</code> URL that works on both your computer and your Android phone!</li>
+        </ol>
+
+        <h4 style="font-size: 0.92rem; margin-bottom: 0.25rem;">Option B: GitHub Pages or Cloudflare Pages (Free Forever)</h4>
+        <div class="code-block">git init
+git add index.html index.css app.js phonetics-dict.js apkg-exporter.js manifest.webmanifest sw.js sample-arbre-de-noel.jpg
+git commit -m "Deploy LexiForge Anki Studio"
+# Push to a GitHub repository and enable Settings -> Pages (Deploy from branch: main)</div>
+
+        <h4 style="font-size: 0.92rem; margin-bottom: 0.25rem;">Using on Your Android Phone + AnkiDroid</h4>
+        <ul style="padding-left: 1.25rem;">
+          <li><strong>Install as an Android App:</strong> Open your hosted URL in Chrome on Android, tap the <strong>⋮ menu → Add to Home screen / Install app</strong>.</li>
+          <li><strong>One-Tap Import into AnkiDroid:</strong> Tap <strong>Export New Cards (.apkg)</strong> on your phone. When the <code>.apkg</code> file downloads, tap <strong>Open</strong> — AnkiDroid automatically imports the cards (and images) and merges them directly into your existing <code>français</code>, <code>italiano</code>, <code>mandarin (正體字)</code>, and <code>mandarin (簡化字)</code> decks!</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: Optional AI Settings -->
+  <div id="modal-settings" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-settings-title">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="modal-settings-title">Pronunciation &amp; Definition Engine Settings</h3>
+        <button type="button" id="btn-close-settings-modal" class="btn btn-ghost btn-sm">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+          By default, the app automatically generates <code>[B]</code> (IPA for <code>français</code>/<code>italiano</code>, Zhuyin for <code>mandarin</code>) and <code>[C]</code> (concise definitions in French, Italian, or English) using its built-in Wiktionary API &amp; phonetic transducer with zero setup required.
+        </p>
+
+        <div class="field-group">
+          <label for="input-gemini-key" class="field-label" style="margin-bottom: 0.35rem;">
+            Optional: Free Google Gemini API Key (for Context-Aware AI Definitions)
+          </label>
+          <input
+            type="password"
+            id="input-gemini-key"
+            class="input-text input-mono"
+            placeholder="AIzaSy... (stored locally in your browser only)"
+            autocomplete="off"
+          >
+          <p style="font-size: 0.76rem; color: var(--text-muted); margin-top: 0.4rem;">
+            If provided, clicking "Auto-Fill [B] &amp; [C]" uses <code>gemini-2.5-flash</code> to tailor the concise definition to your exact context sentence. Leave blank to use the free built-in Wiktionary &amp; phonetic engine.
+          </p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="btn-save-settings" class="btn btn-primary">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <!-- Scripts -->
+  <script src="phonetics-dict.js"></script>
+  <script src="apkg-exporter.js"></script>
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
